@@ -24,7 +24,7 @@
     <div class="workspace">
       <div class="editor">
         <section class="panel">
-          <div class="panel-head"><span class="section-icon" aria-hidden="true">▤</span><h2>기본 정보</h2></div>
+          <div class="panel-head"><span class="section-icon" aria-hidden="true">▤</span><h2>회사 및 견적 정보</h2></div>
           <div class="fields">
             <label>공급자<input data-field="supplier" autocomplete="organization"></label>
             <label>고객사<input data-field="customer" placeholder="고객사명 입력"></label>
@@ -36,9 +36,20 @@
           </div>
         </section>
         <section class="panel">
-          <div class="panel-head item-head"><span class="section-icon" aria-hidden="true">☷</span><h2>견적 품목</h2><button class="secondary" id="add"><span aria-hidden="true">＋</span> 품목 추가</button></div>
-          <div id="items"></div>
+          <div class="panel-head item-head"><span class="section-icon" aria-hidden="true">☷</span><h2>견적 품목</h2><button class="secondary" id="add"><span aria-hidden="true">＋</span> 행 추가</button></div>
+          <table class="item-table" aria-label="편집 가능한 견적 품목">
+            <thead><tr>
+              <th scope="col">품목명</th><th scope="col">수량</th><th scope="col">단가 (원)</th><th scope="col">금액</th><th scope="col"><span class="sr-only">행 삭제</span></th>
+            </tr></thead>
+            <tbody id="items"></tbody>
+          </table>
+          <p class="empty-items" id="empty-items" hidden>행 추가를 눌러 품목을 입력하세요.</p>
           <p class="tax-note">모든 단가는 부가세 별도 기준입니다.</p>
+        </section>
+        <section class="panel discount-panel">
+          <div class="panel-head"><span class="section-icon" aria-hidden="true">%</span><h2>전체 할인</h2></div>
+          <label for="discount-rate">할인율 <span class="percent-input"><input id="discount-rate" inputmode="decimal" aria-describedby="discount-hint"><span aria-hidden="true">%</span></span></label>
+          <p class="tax-note" id="discount-hint">0~100%. 공급가액에 할인을 적용한 뒤 부가세를 계산합니다.</p>
         </section>
       </div>
       <section class="preview" aria-labelledby="preview-title">
@@ -66,6 +77,7 @@
           </table>
           <dl class="totals">
             <div><dt>공급가액</dt><dd id="subtotal"></dd></div>
+            <div><dt>할인 금액 (<span id="doc-discount-rate"></span>%)</dt><dd id="discount"></dd></div>
             <div><dt>부가세 (10%)</dt><dd id="tax"></dd></div>
             <div class="grand"><dt>최종 견적 금액</dt><dd id="total"></dd></div>
           </dl>
@@ -75,16 +87,16 @@
     </div>
   </main>
   <template id="item-template">
-    <fieldset class="item">
-      <legend class="sr-only"></legend>
-      <div class="item-top"><span class="item-number" aria-hidden="true"></span><label class="item-title"><span class="sr-only">품목명</span><input data-item="name" placeholder="품목명 입력"></label><button class="remove" type="button" title="품목 삭제"><span aria-hidden="true">×</span></button></div>
-      <label class="description"><span class="sr-only">설명</span><textarea data-item="description" rows="2" placeholder="품목 설명 입력"></textarea></label>
-      <div class="item-bottom">
-        <label>수량<input data-item="quantity" inputmode="numeric" pattern="[0-9,]*"></label>
-        <label>단가 (원)<input data-item="price" inputmode="numeric" pattern="[0-9,]*"></label>
-        <div class="line-total"><span>금액</span><output></output></div>
-      </div>
-    </fieldset>
+    <tr class="item">
+      <td class="item-details">
+        <input data-item="name" aria-label="품목명" placeholder="품목명 입력">
+        <textarea data-item="description" aria-label="설명" rows="2" placeholder="설명 입력"></textarea>
+      </td>
+      <td><input data-item="quantity" aria-label="수량" inputmode="numeric"></td>
+      <td><input data-item="price" aria-label="단가 (원)" inputmode="numeric"></td>
+      <td class="line-total"><output aria-label="금액"></output></td>
+      <td class="remove-cell"><button class="remove" type="button" title="행 삭제"><span aria-hidden="true">×</span></button></td>
+    </tr>
   </template>
 </body>
 </html>

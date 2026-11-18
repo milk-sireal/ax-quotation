@@ -10,7 +10,7 @@ from playwright.sync_api import expect, sync_playwright
 with sync_playwright() as playwright, TemporaryDirectory() as temp:
     executable = os.environ.get('CHROMIUM_PATH')
     browser = playwright.chromium.launch(executable_path=executable)
-    page = browser.new_page(viewport={'width': 1366, 'height': 950})
+    page = browser.new_page(has_touch=True, viewport={'width': 1366, 'height': 950})
     base = os.environ.get('QUOTE_URL', 'http://localhost:3000')
     errors = []
     requests = []
@@ -24,6 +24,18 @@ with sync_playwright() as playwright, TemporaryDirectory() as temp:
 
     check_totals('4,700,000', '470,000', '5,170,000')
     expect(page.locator('#quote-lines td').nth(3)).to_have_text('800,000원')
+    discount = page.get_by_label('할인율')
+    expect(discount).to_have_value('0')
+    discount.fill('10')
+    expect(page.locator('#discount')).to_have_text('−470,000원')
+    check_totals('4,700,000', '423,000', '4,653,000')
+    page.reload()
+    expect(discount).to_have_value('10')
+    check_totals('4,700,000', '423,000', '4,653,000')
+    discount.fill('101')
+    expect(discount).to_have_value('100')
+    check_totals('4,700,000', '0', '0')
+    discount.fill('0')
     for key, value in {
         'customer': '테스트 고객사', 'supplier': '테스트 공급자', 'manager': '테스트 담당자',
         'email': 'test@example.com', 'number': 'AX-TEST-001',
@@ -33,12 +45,16 @@ with sync_playwright() as playwright, TemporaryDirectory() as temp:
         expect(page.locator('#doc-' + key)).to_have_text(value)
 
     first = page.locator('.item').first
-    first.get_by_label('수량', exact=True).fill('3')
+    assert first.locator('td').count() == 5
+    quantity = first.get_by_label('수량', exact=True)
+    first.locator('td').nth(1).click(position={'x': 2, 'y': 2})
+    expect(quantity).to_be_focused()
+    quantity.fill('3')
     first.get_by_label('단가 (원)', exact=True).fill('1000000')
     expect(first.get_by_label('단가 (원)', exact=True)).to_have_value('1,000,000')
     expect(first.locator('output')).to_have_text('3,000,000원')
     check_totals('6,900,000', '690,000', '7,590,000')
-    add = page.get_by_role('button', name='품목 추가')
+    add = page.get_by_role('button', name='행 추가')
     add.click()
     last = page.locator('.item').last
     last.get_by_label('품목명').fill('추가 교육')
@@ -56,12 +72,19 @@ with sync_playwright() as playwright, TemporaryDirectory() as temp:
     check_totals('6,900,000', '690,000', '7,590,000')
     page.reload()
     expect(page.locator('.item')).to_have_count(3)
-    print('PASS — quote editing, example totals, item changes, and reload persistence')
+    print('PASS — table editing, 10% discount example, item changes, and reload persistence')
 
     for width in (320, 390, 1366):
         page.set_viewport_size({'width': width, 'height': 900})
         assert page.evaluate('document.documentElement.scrollWidth === innerWidth'), width
     print('PASS — no horizontal page overflow at 320px, 390px, or 1366px')
+
+    page.set_viewport_size({'width': 390, 'height': 900})
+    quantity.tap()
+    expect(quantity).to_be_focused()
+    page.set_viewport_size({'width': 1366, 'height': 900})
+    discount.fill('10')
+    check_totals('6,900,000', '621,000', '6,831,000')
 
     page.evaluate('window.print = () => window.printInvoked = true')
     page.get_by_role('button', name='인쇄 / PDF 저장').click()
@@ -77,8 +100,8 @@ with sync_playwright() as playwright, TemporaryDirectory() as temp:
         info = subprocess.check_output(['pdfinfo', path], text=True)
         content = subprocess.check_output(['pdftotext', path, '-'], text=True)
         assert re.search(r'Page size:.*\(A4\)', info), info
-        assert '7,590,000' in content and 'AX-TEST-001' in content
-        assert '품목 추가' not in content and 'PDF 저장' not in content
+        assert '6,831,000' in content and '690,000' in content and 'AX-TEST-001' in content
+        assert '행 추가' not in content and 'PDF 저장' not in content
         return int(re.search(r'^Pages:\s+(\d+)', info, re.M).group(1)), content
 
     pages, _ = check_pdf('quote.pdf')

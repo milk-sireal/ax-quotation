@@ -1,4 +1,4 @@
-import { digits, exampleQuote, grouped, itemAmount, restore, save, totals } from './quote.js'
+import { discountBasisPoints, digits, exampleQuote, grouped, itemAmount, restore, save, totals } from './quote.js'
 
 const find = (id) => document.getElementById(id)
 const currency = (value) => grouped(value) + '원'
@@ -34,6 +34,24 @@ for (const input of fields) {
   })
 }
 
+const discountInput = find('discount-rate')
+discountInput.value = quote.discountRate
+discountInput.addEventListener('input', () => {
+  const raw = discountInput.value
+  if (!/^\d*(?:\.\d{0,2})?$/.test(raw)) {
+    discountInput.value = quote.discountRate
+    return
+  }
+  const rate = discountBasisPoints(raw) / 100
+  quote.discountRate = String(rate)
+  if (Number(raw) > 100) discountInput.value = quote.discountRate
+  renderQuote()
+  persist()
+})
+discountInput.addEventListener('blur', () => {
+  discountInput.value = quote.discountRate
+})
+
 function renderQuote() {
   for (const { dataset: { field } } of fields) {
     const fallback = field === 'customer' ? '고객사명 입력' : '—'
@@ -61,8 +79,9 @@ function renderQuote() {
     cell.className = 'empty'
     cell.textContent = '등록된 품목이 없습니다.'
   }
-  for (const [key, value] of Object.entries(totals(quote.items))) {
-    find(key).textContent = currency(value)
+  find('doc-discount-rate').textContent = quote.discountRate
+  for (const [key, value] of Object.entries(totals(quote.items, quote.discountRate))) {
+    find(key).textContent = (key === 'discount' && value ? '−' : '') + currency(value)
   }
 }
 
@@ -78,19 +97,17 @@ function setNumber(input, raw) {
 }
 
 function updateItemNumbers() {
-  for (const [index, fieldset] of Array.from(list.children).entries()) {
-    const label = '품목 ' + (index + 1)
-    fieldset.querySelector('legend').textContent = label
-    fieldset.querySelector('.item-number').textContent = String(index + 1).padStart(2, '0')
-    fieldset.querySelector('.remove').setAttribute('aria-label', label + ' 삭제')
+  find('empty-items').hidden = Boolean(list.rows.length)
+  for (const [index, row] of Array.from(list.rows).entries()) {
+    row.querySelector('.remove').setAttribute('aria-label', '품목 ' + (index + 1) + ' 삭제')
   }
 }
 
 function appendItem(item) {
-  const fieldset = find('item-template').content.firstElementChild.cloneNode(true)
-  const output = fieldset.querySelector('output')
+  const row = find('item-template').content.firstElementChild.cloneNode(true)
+  const output = row.querySelector('output')
   output.textContent = currency(itemAmount(item))
-  for (const input of fieldset.querySelectorAll('[data-item]')) {
+  for (const input of row.querySelectorAll('[data-item]')) {
     const key = input.dataset.item
     const numeric = key === 'quantity' || key === 'price'
     input.value = numeric && item[key] ? grouped(item[key]) : item[key]
@@ -116,19 +133,23 @@ function appendItem(item) {
       persist()
     })
   }
-  fieldset.querySelector('.remove').addEventListener('click', () => {
-    const next = fieldset.nextElementSibling ?? fieldset.previousElementSibling
+  row.querySelector('.remove').addEventListener('click', () => {
+    const next = row.nextElementSibling ?? row.previousElementSibling
     quote.items.splice(quote.items.indexOf(item), 1)
-    fieldset.remove()
+    row.remove()
     updateItemNumbers()
     renderQuote()
     persist()
     const focusTarget = next?.querySelector('.remove') ?? find('add')
     focusTarget.focus()
   })
-  list.append(fieldset)
-  return fieldset.querySelector('[data-item="name"]')
+  list.append(row)
+  return row.querySelector('[data-item="name"]')
 }
+
+list.addEventListener('click', (event) => {
+  if (event.target.matches('td')) event.target.querySelector('input')?.focus()
+})
 
 find('add').addEventListener('click', () => {
   const item = { name: '', description: '', quantity: '1', price: '' }

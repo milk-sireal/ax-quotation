@@ -8,6 +8,7 @@ export function exampleQuote(now = new Date()) {
     manager: '홍길동',
     email: 'contact@example.com',
     customer: '',
+    discountRate: '0',
     number: 'AX-' + issued.replaceAll('-', '') + '-001',
     issued,
     expires: date(new Date(now.getTime() + 30 * 86400000)),
@@ -27,10 +28,17 @@ export function itemAmount(item) {
   return BigInt(digits(item.quantity)) * BigInt(digits(item.price))
 }
 
-export function totals(items) {
+export function discountBasisPoints(value) {
+  if (!/^\d*(?:\.\d{0,2})?$/.test(String(value))) return 0
+  return Math.min(10000, Math.round((Number(value) || 0) * 100))
+}
+
+export function totals(items, discountRate = '0') {
   const subtotal = items.reduce((sum, item) => sum + itemAmount(item), 0n)
-  const tax = (subtotal + 5n) / 10n
-  return { subtotal, tax, total: subtotal + tax }
+  const discount = (subtotal * BigInt(discountBasisPoints(discountRate)) + 5000n) / 10000n
+  const taxable = subtotal - discount
+  const tax = (taxable + 5n) / 10n
+  return { subtotal, discount, tax, total: taxable + tax }
 }
 
 const formatter = new Intl.NumberFormat('ko-KR')
@@ -46,6 +54,7 @@ export function restore(storage) {
   for (const key of Object.keys(defaults)) {
     if (typeof saved[key] === 'string') quote[key] = saved[key]
   }
+  quote.discountRate = String(discountBasisPoints(quote.discountRate) / 100)
   quote.items = saved.items.map((item) => ({
     name: String(item?.name ?? ''),
     description: String(item?.description ?? ''),
