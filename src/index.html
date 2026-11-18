@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="AX러닝랩 기업 교육 견적서 작성 및 인쇄">
+  <title>AX러닝랩 견적서 생성기</title>
+  <link rel="stylesheet" href="./style.css">
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="top-inner">
+      <div class="brand"><span class="brand-icon" aria-hidden="true">AX</span><span>AX러닝랩</span><span class="brand-divider"></span><span class="brand-sub">견적서 생성기</span></div>
+      <span class="save-state" id="save-state" role="status"><span class="status-dot"></span><span id="save-label">자동 저장됨</span></span>
+    </div>
+  </header>
+  <main>
+    <section class="intro">
+      <div><h1>견적서 작성</h1><p>기업 교육 견적을 작성하고 PDF로 저장하세요.</p></div>
+      <button class="primary" id="print"><span class="printer" aria-hidden="true"></span>인쇄 / PDF 저장</button>
+    </section>
+    <div class="workspace">
+      <div class="editor">
+        <section class="panel">
+          <div class="panel-head"><span class="section-icon" aria-hidden="true">▤</span><h2>기본 정보</h2></div>
+          <div class="fields">
+            <label>공급자<input data-field="supplier" autocomplete="organization"></label>
+            <label>고객사<input data-field="customer" placeholder="고객사명 입력"></label>
+            <label>담당자<input data-field="manager" autocomplete="name"></label>
+            <label>이메일<input data-field="email" type="email" autocomplete="email"></label>
+            <label class="wide">견적번호<input data-field="number"></label>
+            <label>발행일<input data-field="issued" type="date"></label>
+            <label>유효기간<input data-field="expires" type="date"></label>
+          </div>
+        </section>
+        <section class="panel">
+          <div class="panel-head item-head"><span class="section-icon" aria-hidden="true">☷</span><h2>견적 품목</h2><button class="secondary" id="add"><span aria-hidden="true">＋</span> 품목 추가</button></div>
+          <div id="items"></div>
+          <p class="tax-note">모든 단가는 부가세 별도 기준입니다.</p>
+        </section>
+      </div>
+      <section class="preview" aria-labelledby="preview-title">
+        <div class="preview-head"><div><span class="section-icon" aria-hidden="true">◫</span><h2 id="preview-title">견적서 미리보기</h2></div><span class="paper-size">A4</span></div>
+        <article class="paper" aria-label="인쇄용 견적서">
+          <div class="doc-header">
+            <div class="doc-brand"><span class="doc-logo" aria-hidden="true">AX</span><strong id="doc-supplier"></strong></div>
+            <h2>견적서</h2>
+          </div>
+          <div class="doc-meta">
+            <dl>
+              <div><dt>고객사</dt><dd id="doc-customer"></dd></div>
+              <div><dt>담당자</dt><dd id="doc-manager"></dd></div>
+              <div><dt>이메일</dt><dd id="doc-email"></dd></div>
+            </dl>
+            <dl>
+              <div><dt>견적번호</dt><dd id="doc-number"></dd></div>
+              <div><dt>발행일</dt><dd id="doc-issued"></dd></div>
+              <div><dt>유효기간</dt><dd id="doc-expires"></dd></div>
+            </dl>
+          </div>
+          <table class="quote-table">
+            <thead><tr><th scope="col">품목</th><th scope="col">수량</th><th scope="col">단가</th><th scope="col">금액</th></tr></thead>
+            <tbody id="quote-lines"></tbody>
+          </table>
+          <dl class="totals">
+            <div><dt>공급가액</dt><dd id="subtotal"></dd></div>
+            <div><dt>부가세 (10%)</dt><dd id="tax"></dd></div>
+            <div class="grand"><dt>최종 견적 금액</dt><dd id="total"></dd></div>
+          </dl>
+          <p class="doc-note">단가는 부가세 별도이며 최종 견적 금액에는 부가세가 포함됩니다.</p>
+        </article>
+      </section>
+    </div>
+  </main>
+  <template id="item-template">
+    <fieldset class="item">
+      <legend class="sr-only"></legend>
+      <div class="item-top"><span class="item-number" aria-hidden="true"></span><label class="item-title"><span class="sr-only">품목명</span><input data-item="name" placeholder="품목명 입력"></label><button class="remove" type="button" title="품목 삭제"><span aria-hidden="true">×</span></button></div>
+      <label class="description"><span class="sr-only">설명</span><textarea data-item="description" rows="2" placeholder="품목 설명 입력"></textarea></label>
+      <div class="item-bottom">
+        <label>수량<input data-item="quantity" inputmode="numeric" pattern="[0-9,]*"></label>
+        <label>단가 (원)<input data-item="price" inputmode="numeric" pattern="[0-9,]*"></label>
+        <div class="line-total"><span>금액</span><output></output></div>
+      </div>
+    </fieldset>
+  </template>
+</body>
+</html>
